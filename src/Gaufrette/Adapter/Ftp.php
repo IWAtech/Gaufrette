@@ -13,7 +13,8 @@ use Gaufrette\Filesystem;
  */
 class Ftp implements Adapter,
                      FileFactory,
-                     ListKeysAware
+                     ListKeysAware,
+                     StreamFactory
 {
     protected $connection = null;
     protected $directory;
@@ -56,6 +57,20 @@ class Ftp implements Adapter,
      */
     public function read($key)
     {
+        $temp = $this->createStream($key);
+
+        rewind($temp);
+        $contents = stream_get_contents($temp);
+        fclose($temp);
+
+        return $contents;
+    }
+
+    /**
+     * @param string $key
+     * @return bool|\Gaufrette\Stream|string
+     */
+    public function createStream($key) {
         $this->ensureDirectoryExists($this->directory, $this->create);
 
         $temp = fopen('php://temp', 'r+');
@@ -64,11 +79,7 @@ class Ftp implements Adapter,
             return false;
         }
 
-        rewind($temp);
-        $contents = stream_get_contents($temp);
-        fclose($temp);
-
-        return $contents;
+        return $temp;
     }
 
     /**
